@@ -56,9 +56,10 @@ nav button.on{color:var(--br);font-weight:800}
 :focus-visible{outline:3px solid var(--ac);outline-offset:2px}
 @media(prefers-reduced-motion:reduce){*{animation:none!important}}
 </style></head>
-<body><div id="app"><div id="main"></div></div>
+<body><div id="app"><div id="main">جاري التحميل...</div></div>
 <nav><div id="nav"></div></nav><div id="toast"></div>
 <script>
+window.onerror=function(m,u,l){document.body.insertAdjacentHTML('afterbegin','<pre style="color:#fff;background:#b3261e;padding:10px;white-space:pre-wrap;direction:ltr;margin:0">'+m+' @'+l+'</pre>')};
 const K='sahby1';let S={tasks:[],tx:[],events:[],budget:0,chat:[],theme:''};
 try{Object.assign(S,JSON.parse(localStorage.getItem(K)||'{}'))}catch(e){}
 const save=()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}};
@@ -73,6 +74,7 @@ const KL={task:'مهمة',event:'موعد',expense:'مصروف',income:'دخل'}
 const MIC='<svg viewBox="0 0 24 24"><path d="M12 15a4 4 0 0 0 4-4V6a4 4 0 0 0-8 0v5a4 4 0 0 0 4 4zm6-4a6 6 0 0 1-12 0H4a8 8 0 0 0 7 7.9V22h2v-3.1A8 8 0 0 0 20 11z"/></svg>';
 const CATS=[['مواصلات',/مواصلات|تاكسي|أوبر|اوبر|ميكروباص|مترو|اتوبيس|أتوبيس/],['وقود',/بنزين|سولار|وقود/],['أكل',/أكل|اكل|غدا|غداء|عشا|عشاء|فطار|فطور|قهوة|مطعم|بقالة|سوبر/],['شغل',/شغل|مكتب/],['فواتير',/فاتورة|فواتير|كهربا|(^|\s)نت(\s|$)|انترنت|موبايل|رصيد|إيجار|ايجار/],['صحة',/دوا|دواء|دكتور|صيدلية|كشف/],['ترفيه',/سينما|خروجة|لعبة|اشتراك/],['تسوق',/هدوم|ملابس|جزمة|اشتريت/]];
 const STOP=new Set(['بص','أنا','انا','عندي','عندى','لازم','فكرني','بالليل','الصبح','صباحا','مساء','العصر','بكرة','بكره','النهارده','النهاردة','اليوم','و']);
+function allNums(s){const r=[],re=/\d+(?:\.\d+)?/g;let m;while((m=re.exec(s)))r.push(m);return r}
 function parse(raw){
  const t=raw.replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d));
  const parts=t.split(/[،,.؟!\n]+|\s+(?:وكمان|وبعدين|وبعدها|وبعد كده|بعدها|كمان)\s+|\s+و(?=(?:اشتريت|صرفت|دفعت|فكرني|لازم|عندي|هروح|قبضت|استلمت))/);
@@ -84,11 +86,11 @@ function parse(raw){
   let time=null;const tm=c.match(/الساعة\s*(\d{1,2})(?::(\d{2}))?/);
   if(tm){let h=+tm[1];if(/ليل|مساء|عصر|ضهر|ظهر/.test(c)){if(h<12)h+=12}else if(!/صبح|صباح/.test(c)&&h>=1&&h<=6)h+=12;time=pad(h%24)+':'+(tm[2]||'00')}
   const c2=c.replace(/الساعة\s*\d{1,2}(:\d{2})?/,' ');
-  const nums=[...c2.matchAll(/\d+(?:\.\d+)?/g)];
+  const nums=allNums(c2);
   const inc=nums.length&&/قبضت|استلمت|مرتب|جالي|اتحول/.test(c2),mon=nums.length&&/صرفت|دفعت|اشتريت|جنيه|بـ/.test(c2);
   if(inc||mon){nums.forEach((m,i)=>{const nx=nums[i+1],after=c2.slice(m.index+m[0].length,nx?nx.index:undefined),before=i?'':c2.slice(0,m.index);
     let cat='أخرى';if(!inc){const f=CATS.find(x=>x[1].test(after))||CATS.find(x=>x[1].test(before))||CATS.find(x=>x[1].test(c2));if(f)cat=f[0]}
-    out.push({kind:inc?'income':'expense',title:inc?'دخل':cat,amount:+m[0],cat:inc?'دخل':cat,date:addDays(off??0),warn:[],on:true})});continue}
+    out.push({kind:inc?'income':'expense',title:inc?'دخل':cat,amount:+m[0],cat:inc?'دخل':cat,date:addDays(off===null?0:off),warn:[],on:true})});continue}
   const title=c2.replace(/بعد بكر[ةه]|الأسبوع الجاي|الاسبوع الجاي|يا صاحبي|يا صاحبى|لو سمحت/g,' ').split(/\s+/).filter(w=>w&&!STOP.has(w)).join(' ');
   const ev=/محاضرة|اجتماع|ميعاد|موعد|مقابلة|امتحان|كشف|حفلة|عزومة/.test(c2),tk=/فكرني|لازم|محتاج|هروح|أروح|اروح|اعمل|أعمل|اكلم|أكلم|اذاكر|أذاكر|أشتري|اشتري|أدفع|ادفع|أحجز|احجز|اتصل|أتصل|ابعت|أبعت/.test(c);
   if(!ev&&!tk)continue;if(!title)continue;
