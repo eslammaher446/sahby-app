@@ -145,11 +145,11 @@ function micWeb(){const SR=window.SpeechRecognition||window.webkitSpeechRecognit
  rec.onerror=()=>toast('تعذّر الوصول للميكروفون، اسمح بالإذن أو اكتب');
  rec.onend=()=>{rec=null;const b=$('mb');if(b)b.classList.remove('on');if($('inp')&&$('inp').value.trim())send()};
  rec.start();$('mb').classList.add('on');toast('بسمعك... اضغط تاني لما تخلص')}
-const CapSR=(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform())?Capacitor.registerPlugin('SpeechRecognition'):null;
+let CapSR=null;try{const C=window.Capacitor;if(C&&C.isNativePlatform&&C.isNativePlatform()){CapSR=typeof C.registerPlugin==='function'?C.registerPlugin('SpeechRecognition'):(C.Plugins&&C.Plugins.SpeechRecognition)||null}}catch(e){CapSR=null}
 async function mic(){if(!CapSR)return micWeb();
  if(rec){try{await CapSR.stop()}catch(e){}return}
  try{const p=await CapSR.requestPermissions();if(p.speechRecognition!=='granted')return toast('اسمح بإذن الميكروفون من إعدادات الموبايل');
-  await CapSR.removeAllListeners();
+  try{await CapSR.removeAllListeners()}catch(e){}
   CapSR.addListener('partialResults',d=>{$('inp').value=(d.matches||[])[0]||''});
   CapSR.addListener('listeningState',d=>{if(d.status==='stopped'){rec=null;const b=$('mb');if(b)b.classList.remove('on');if($('inp')&&$('inp').value.trim())send()}});
   rec=true;$('mb').classList.add('on');toast('بسمعك... اضغط تاني لما تخلص');
